@@ -105,9 +105,8 @@ body {
 
 .account-actions {
     display: flex;
-    gap: 20px;
-    margin-bottom: 30px;
-    justify-content: center;
+    gap: 10px;
+    align-items: center;
 }
 
 .create-account-btn {
@@ -309,6 +308,445 @@ body {
 .copy-invite-btn:hover {
     background: #6b9b37;
     transform: scale(1.05);
+}
+
+.delete-account-btn {
+    background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.delete-account-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba(245, 101, 101, 0.3);
+}
+
+/* 分析报告和理财目标按钮 */
+.analysis-btn, .goals-btn {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-left: 10px;
+}
+
+.analysis-btn:hover, .goals-btn:hover {
+    background-color: #218838;
+}
+
+/* 分析报告界面 */
+.analysis-view {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: white;
+    z-index: 1000;
+    overflow-y: auto;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.analysis-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.analysis-header h2 {
+    margin: 0;
+    color: #333;
+}
+
+.close-analysis-btn {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.close-analysis-btn:hover {
+    background-color: #5a6268;
+}
+
+.analysis-tabs {
+    display: flex;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    padding: 12px 24px;
+    cursor: pointer;
+    font-size: 16px;
+    color: #6c757d;
+    border-bottom: 2px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.tab-btn.active {
+    color: #007bff;
+    border-bottom-color: #007bff;
+}
+
+.tab-btn:hover {
+    color: #007bff;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.date-selector {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.date-selector select {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.analysis-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.summary-card {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.summary-card h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+}
+
+.summary-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.stat-row:last-child {
+    border-bottom: none;
+    font-weight: bold;
+}
+
+.category-analysis, .monthly-trend {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.category-analysis h4, .monthly-trend h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+}
+
+#monthly-category-chart, #yearly-trend-chart {
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.chart-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.chart-item:last-child {
+    border-bottom: none;
+}
+
+.chart-bar {
+    height: 20px;
+    background-color: #007bff;
+    border-radius: 10px;
+    margin: 0 10px;
+    min-width: 20px;
+}
+
+/* 理财目标界面 */
+.goals-view {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: white;
+    z-index: 1000;
+    overflow-y: auto;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.goals-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.goals-header h2 {
+    margin: 0;
+    color: #333;
+}
+
+.close-goals-btn {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.close-goals-btn:hover {
+    background-color: #5a6268;
+}
+
+.goals-actions {
+    margin-bottom: 20px;
+}
+
+.add-goal-btn {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.add-goal-btn:hover {
+    background-color: #218838;
+}
+
+.goals-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.goal-item {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.goal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.goal-name {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+}
+
+.goal-amount {
+    font-size: 16px;
+    color: #007bff;
+    font-weight: bold;
+}
+
+.goal-progress {
+    margin: 15px 0;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 20px;
+    background-color: #e9ecef;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: #28a745;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    margin-top: 5px;
+    font-size: 14px;
+    color: #6c757d;
+}
+
+.goal-deadline {
+    font-size: 14px;
+    color: #6c757d;
+    margin-bottom: 10px;
+}
+
+.goal-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.edit-goal-btn, .delete-goal-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.edit-goal-btn {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.edit-goal-btn:hover {
+    background-color: #e0a800;
+}
+
+.delete-goal-btn {
+    background-color: #dc3545;
+    color: white;
+}
+
+.delete-goal-btn:hover {
+    background-color: #c82333;
+}
+
+/* 目标表单模态框 */
+.goal-form-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1100;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.goal-form-content {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90%;
+    overflow-y: auto;
+}
+
+.goal-form-content h3 {
+    margin: 0 0 20px 0;
+    color: #333;
+}
+
+.goal-form-content .form-group {
+    margin-bottom: 15px;
+}
+
+.goal-form-content label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #333;
+}
+
+.goal-form-content input,
+.goal-form-content textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.goal-form-content textarea {
+    height: 80px;
+    resize: vertical;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.save-goal-btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.save-goal-btn:hover {
+    background-color: #0056b3;
+}
+
+.cancel-goal-btn {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.cancel-goal-btn:hover {
+    background-color: #5a6268;
 }
 
 .account-actions {

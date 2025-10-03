@@ -6,6 +6,8 @@ class MoneyTracker {
         this.isRegistering = false;
         this.accounts = []; // 用户的所有账单
         this.currentAccount = null; // 当前选中的账单
+        this.goals = []; // 理财目标
+        this.currentEditingGoal = null; // 当前编辑的目标
         this.init();
     }
 
@@ -64,9 +66,19 @@ class MoneyTracker {
             this.logout();
         });
 
-        // 备份数据
+        // 备份按钮
         document.getElementById('backup-btn').addEventListener('click', () => {
             this.backupData();
+        });
+        
+        // 分析报告按钮
+        document.getElementById('analysis-btn').addEventListener('click', () => {
+            this.showAnalysisView();
+        });
+        
+        // 理财目标按钮
+        document.getElementById('goals-btn').addEventListener('click', () => {
+            this.showGoalsView();
         });
 
         // 交易表单提交
@@ -312,6 +324,7 @@ class MoneyTracker {
                 </div>
                 <div class="account-actions">
                     <button class="select-account-btn" onclick="moneyTracker.selectAccount('${account.id}')">选择</button>
+                    <button class="delete-account-btn" onclick="moneyTracker.deleteAccount('${account.id}')">删除</button>
                 </div>
             </div>
         `).join('');
@@ -333,6 +346,55 @@ class MoneyTracker {
         if (this.currentAccount) {
             document.getElementById('current-account-name').textContent = this.currentAccount.name;
             this.showMainAppContent();
+        }
+    }
+    
+    // 删除账单
+    deleteAccount(accountId) {
+        const account = this.accounts.find(acc => acc.id === accountId);
+        if (!account) {
+            alert('账单不存在');
+            return;
+        }
+        
+        // 确认删除
+        const confirmMessage = `确定要删除账单 "${account.name}" 吗？\n\n注意：删除后该账单的所有交易记录都将被永久删除，此操作无法撤销！`;
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+        
+        // 如果删除的是当前选中的账单，清除当前账单
+        if (this.currentAccount && this.currentAccount.id === accountId) {
+            this.currentAccount = null;
+        }
+        
+        // 从账单列表中移除
+        this.accounts = this.accounts.filter(acc => acc.id !== accountId);
+        
+        // 删除该账单的所有交易记录
+        const transactionsKey = `money-tracker-transactions-${this.currentUser}-${accountId}`;
+        localStorage.removeItem(transactionsKey);
+        
+        // 删除该账单的理财目标
+        const goalsKey = `money-tracker-goals-${this.currentUser}`;
+        const savedGoals = localStorage.getItem(goalsKey);
+        if (savedGoals) {
+            const goals = JSON.parse(savedGoals);
+            const filteredGoals = goals.filter(goal => goal.accountId !== accountId);
+            localStorage.setItem(goalsKey, JSON.stringify(filteredGoals));
+        }
+        
+        // 保存更新后的账单列表
+        this.saveUserAccounts();
+        
+        // 重新渲染账单列表
+        this.renderAccountList();
+        
+        alert(`账单 "${account.name}" 已删除`);
+        
+        // 如果没有账单了，确保用户能看到创建提示
+        if (this.accounts.length === 0) {
+            this.renderAccountList();
         }
     }
 
@@ -792,21 +854,461 @@ class MoneyTracker {
 
     // 恢复备份数据
     restoreBackup() {
-        const backupKey = `money-tracker-backup-${this.currentUser}`;
-        const backup = localStorage.getItem(backupKey);
-        
-        if (backup) {
-            try {
-                const backupData = JSON.parse(backup);
-                if (backupData.transactions && Array.isArray(backupData.transactions)) {
-                    return backupData.transactions;
-                }
-            } catch (error) {
-                console.error('备份数据解析失败:', error);
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        if (data.transactions && Array.isArray(data.transactions)) {
+                            this.transactions = data.transactions;
+                            this.saveTransactions();
+                            this.updateDisplay();
+                            alert('数据恢复成功！');
+                        } else {
+                            alert('无效的备份文件格式');
+                        }
+                    } catch (error) {
+                        alert('文件读取失败，请检查文件格式');
+                    }
+                };
+                reader.readAsText(file);
             }
+        };
+        input.click();
+    }
+    
+    // ===== 分析报告功能 =====
+    showAnalysisView() {
+        document.getElementById('main-app').style.display = 'none';
+        document.getElementById('analysis-view').style.display = 'block';
+        this.initAnalysisView();
+    }
+    
+    initAnalysisView() {
+        // 绑定关闭按钮
+        document.getElementById('close-analysis-btn').addEventListener('click', () => {
+            this.closeAnalysisView();
+        });
+        
+        // 绑定标签页切换
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.switchAnalysisTab(e.target.dataset.tab);
+            });
+        });
+        
+        // 初始化日期选择器
+        this.initDateSelectors();
+        
+        // 绑定日期选择器事件
+        document.getElementById('month-selector').addEventListener('change', () => {
+            this.updateMonthlyAnalysis();
+        });
+        document.getElementById('year-selector').addEventListener('change', () => {
+            this.updateMonthlyAnalysis();
+        });
+        document.getElementById('year-analysis-selector').addEventListener('change', () => {
+            this.updateYearlyAnalysis();
+        });
+        
+        // 显示默认分析
+        this.updateMonthlyAnalysis();
+        this.updateYearlyAnalysis();
+    }
+    
+    closeAnalysisView() {
+        document.getElementById('analysis-view').style.display = 'none';
+        document.getElementById('main-app').style.display = 'block';
+    }
+    
+    switchAnalysisTab(tab) {
+        // 更新标签按钮状态
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+        
+        // 切换内容
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        document.getElementById(`${tab}-analysis`).classList.add('active');
+    }
+    
+    initDateSelectors() {
+        const currentDate = new Date();
+        const currentYear = currentDate.getFullYear();
+        const currentMonth = currentDate.getMonth();
+        
+        // 月份选择器
+        const monthSelector = document.getElementById('month-selector');
+        monthSelector.innerHTML = '';
+        const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+        months.forEach((month, index) => {
+            const option = document.createElement('option');
+            option.value = index;
+            option.textContent = month;
+            if (index === currentMonth) option.selected = true;
+            monthSelector.appendChild(option);
+        });
+        
+        // 年份选择器（月度分析）
+        const yearSelector = document.getElementById('year-selector');
+        yearSelector.innerHTML = '';
+        for (let year = currentYear - 5; year <= currentYear + 1; year++) {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year + '年';
+            if (year === currentYear) option.selected = true;
+            yearSelector.appendChild(option);
         }
         
-        return [];
+        // 年份选择器（年度分析）
+        const yearAnalysisSelector = document.getElementById('year-analysis-selector');
+        yearAnalysisSelector.innerHTML = '';
+        for (let year = currentYear - 5; year <= currentYear; year++) {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year + '年';
+            if (year === currentYear) option.selected = true;
+            yearAnalysisSelector.appendChild(option);
+        }
+    }
+    
+    updateMonthlyAnalysis() {
+        const selectedMonth = parseInt(document.getElementById('month-selector').value);
+        const selectedYear = parseInt(document.getElementById('year-selector').value);
+        
+        const monthlyTransactions = this.transactions.filter(t => {
+            const transactionDate = new Date(t.date);
+            return transactionDate.getMonth() === selectedMonth && 
+                   transactionDate.getFullYear() === selectedYear &&
+                   (!this.currentAccount || t.accountId === this.currentAccount.id);
+        });
+        
+        const income = monthlyTransactions
+            .filter(t => t.type === 'income')
+            .reduce((sum, t) => sum + t.amount, 0);
+            
+        const expense = Math.abs(monthlyTransactions
+            .filter(t => t.type === 'expense')
+            .reduce((sum, t) => sum + t.amount, 0));
+            
+        const netIncome = income - expense;
+        
+        document.getElementById('monthly-total-income').textContent = this.formatCurrency(income);
+        document.getElementById('monthly-total-expense').textContent = this.formatCurrency(expense);
+        document.getElementById('monthly-net-income').textContent = this.formatCurrency(netIncome);
+        
+        // 更新分类统计
+        this.updateCategoryChart(monthlyTransactions);
+    }
+    
+    updateYearlyAnalysis() {
+        const selectedYear = parseInt(document.getElementById('year-analysis-selector').value);
+        
+        const yearlyTransactions = this.transactions.filter(t => {
+            const transactionDate = new Date(t.date);
+            return transactionDate.getFullYear() === selectedYear &&
+                   (!this.currentAccount || t.accountId === this.currentAccount.id);
+        });
+        
+        const income = yearlyTransactions
+            .filter(t => t.type === 'income')
+            .reduce((sum, t) => sum + t.amount, 0);
+            
+        const expense = Math.abs(yearlyTransactions
+            .filter(t => t.type === 'expense')
+            .reduce((sum, t) => sum + t.amount, 0));
+            
+        const netIncome = income - expense;
+        
+        document.getElementById('yearly-total-income').textContent = this.formatCurrency(income);
+        document.getElementById('yearly-total-expense').textContent = this.formatCurrency(expense);
+        document.getElementById('yearly-net-income').textContent = this.formatCurrency(netIncome);
+        
+        // 更新月度趋势
+        this.updateYearlyTrendChart(selectedYear);
+    }
+    
+    updateCategoryChart(transactions) {
+        const categoryStats = {};
+        
+        transactions.filter(t => t.type === 'expense').forEach(t => {
+            if (!categoryStats[t.category]) {
+                categoryStats[t.category] = 0;
+            }
+            categoryStats[t.category] += Math.abs(t.amount);
+        });
+        
+        const chartContainer = document.getElementById('monthly-category-chart');
+        chartContainer.innerHTML = '';
+        
+        if (Object.keys(categoryStats).length === 0) {
+            chartContainer.innerHTML = '<div class="empty-state">暂无支出数据</div>';
+            return;
+        }
+        
+        const maxAmount = Math.max(...Object.values(categoryStats));
+        
+        Object.entries(categoryStats)
+            .sort(([,a], [,b]) => b - a)
+            .forEach(([category, amount]) => {
+                const percentage = maxAmount > 0 ? (amount / maxAmount) * 100 : 0;
+                const chartItem = document.createElement('div');
+                chartItem.className = 'chart-item';
+                chartItem.innerHTML = `
+                    <span>${category}</span>
+                    <div class="chart-bar" style="width: ${percentage}%"></div>
+                    <span>${this.formatCurrency(amount)}</span>
+                `;
+                chartContainer.appendChild(chartItem);
+            });
+    }
+    
+    updateYearlyTrendChart(year) {
+        const monthlyData = [];
+        
+        for (let month = 0; month < 12; month++) {
+            const monthTransactions = this.transactions.filter(t => {
+                const transactionDate = new Date(t.date);
+                return transactionDate.getMonth() === month && 
+                       transactionDate.getFullYear() === year &&
+                       (!this.currentAccount || t.accountId === this.currentAccount.id);
+            });
+            
+            const income = monthTransactions
+                .filter(t => t.type === 'income')
+                .reduce((sum, t) => sum + t.amount, 0);
+                
+            const expense = Math.abs(monthTransactions
+                .filter(t => t.type === 'expense')
+                .reduce((sum, t) => sum + t.amount, 0));
+                
+            monthlyData.push({ month: month + 1, income, expense, net: income - expense });
+        }
+        
+        const chartContainer = document.getElementById('yearly-trend-chart');
+        chartContainer.innerHTML = '';
+        
+        const maxAmount = Math.max(
+            ...monthlyData.map(d => Math.max(d.income, d.expense))
+        );
+        
+        monthlyData.forEach(data => {
+            const incomePercentage = maxAmount > 0 ? (data.income / maxAmount) * 100 : 0;
+            const expensePercentage = maxAmount > 0 ? (data.expense / maxAmount) * 100 : 0;
+            
+            const chartItem = document.createElement('div');
+            chartItem.className = 'chart-item';
+            chartItem.innerHTML = `
+                <span>${data.month}月</span>
+                <div style="display: flex; align-items: center; flex: 1; margin: 0 10px;">
+                    <div class="chart-bar" style="width: ${incomePercentage}%; background-color: #28a745; margin-right: 5px;"></div>
+                    <div class="chart-bar" style="width: ${expensePercentage}%; background-color: #dc3545;"></div>
+                </div>
+                <span>净收入: ${this.formatCurrency(data.net)}</span>
+            `;
+            chartContainer.appendChild(chartItem);
+        });
+    }
+    
+    // ===== 理财目标功能 =====
+    showGoalsView() {
+        document.getElementById('main-app').style.display = 'none';
+        document.getElementById('goals-view').style.display = 'block';
+        this.initGoalsView();
+        this.loadGoals();
+        this.renderGoals();
+    }
+    
+    initGoalsView() {
+        // 绑定关闭按钮
+        document.getElementById('close-goals-btn').addEventListener('click', () => {
+            this.closeGoalsView();
+        });
+        
+        // 绑定添加目标按钮
+        document.getElementById('add-goal-btn').addEventListener('click', () => {
+            this.showGoalForm();
+        });
+        
+        // 绑定目标表单
+        document.getElementById('goal-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveGoal();
+        });
+        
+        // 绑定取消按钮
+        document.getElementById('cancel-goal-btn').addEventListener('click', () => {
+            this.hideGoalForm();
+        });
+    }
+    
+    closeGoalsView() {
+        document.getElementById('goals-view').style.display = 'none';
+        document.getElementById('main-app').style.display = 'block';
+    }
+    
+    loadGoals() {
+        const savedGoals = localStorage.getItem(`money-tracker-goals-${this.currentUser}`);
+        if (savedGoals) {
+            this.goals = JSON.parse(savedGoals);
+        }
+    }
+    
+    saveGoalsToStorage() {
+        localStorage.setItem(`money-tracker-goals-${this.currentUser}`, JSON.stringify(this.goals));
+    }
+    
+    showGoalForm(goal = null) {
+        this.currentEditingGoal = goal;
+        const modal = document.getElementById('goal-form-modal');
+        const title = document.getElementById('goal-form-title');
+        
+        if (goal) {
+            title.textContent = '编辑理财目标';
+            document.getElementById('goal-name').value = goal.name;
+            document.getElementById('goal-amount').value = goal.amount;
+            document.getElementById('goal-deadline').value = goal.deadline;
+            document.getElementById('goal-description').value = goal.description || '';
+        } else {
+            title.textContent = '添加理财目标';
+            document.getElementById('goal-form').reset();
+        }
+        
+        modal.style.display = 'flex';
+    }
+    
+    hideGoalForm() {
+        document.getElementById('goal-form-modal').style.display = 'none';
+        this.currentEditingGoal = null;
+    }
+    
+    saveGoal() {
+        const name = document.getElementById('goal-name').value.trim();
+        const amount = parseFloat(document.getElementById('goal-amount').value);
+        const deadline = document.getElementById('goal-deadline').value;
+        const description = document.getElementById('goal-description').value.trim();
+        
+        if (!name || !amount || !deadline) {
+            alert('请填写完整信息');
+            return;
+        }
+        
+        if (amount <= 0) {
+            alert('目标金额必须大于0');
+            return;
+        }
+        
+        const goalData = {
+            id: this.currentEditingGoal ? this.currentEditingGoal.id : Date.now().toString(),
+            name,
+            amount,
+            deadline,
+            description,
+            createdAt: this.currentEditingGoal ? this.currentEditingGoal.createdAt : new Date().toISOString(),
+            accountId: this.currentAccount ? this.currentAccount.id : null
+        };
+        
+        if (this.currentEditingGoal) {
+            const index = this.goals.findIndex(g => g.id === this.currentEditingGoal.id);
+            if (index !== -1) {
+                this.goals[index] = goalData;
+            }
+        } else {
+            this.goals.push(goalData);
+        }
+        
+        this.saveGoalsToStorage();
+        this.renderGoals();
+        this.hideGoalForm();
+    }
+    
+    deleteGoal(goalId) {
+        if (confirm('确定要删除这个目标吗？')) {
+            this.goals = this.goals.filter(g => g.id !== goalId);
+            this.saveGoalsToStorage();
+            this.renderGoals();
+        }
+    }
+    
+    renderGoals() {
+        const goalsList = document.getElementById('goals-list');
+        
+        // 过滤当前账单的目标
+        const accountGoals = this.goals.filter(g => 
+            !this.currentAccount || g.accountId === this.currentAccount.id
+        );
+        
+        if (accountGoals.length === 0) {
+            goalsList.innerHTML = '<div class="empty-state">暂无理财目标</div>';
+            return;
+        }
+        
+        goalsList.innerHTML = accountGoals.map(goal => {
+            const progress = this.calculateGoalProgress(goal);
+            const progressPercentage = Math.min((progress / goal.amount) * 100, 100);
+            const remainingDays = this.calculateRemainingDays(goal.deadline);
+            
+            return `
+                <div class="goal-item">
+                    <div class="goal-header">
+                        <span class="goal-name">${goal.name}</span>
+                        <span class="goal-amount">${this.formatCurrency(goal.amount)}</span>
+                    </div>
+                    
+                    <div class="goal-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${progressPercentage}%"></div>
+                        </div>
+                        <div class="progress-text">
+                            已完成: ${this.formatCurrency(progress)} (${progressPercentage.toFixed(1)}%)
+                        </div>
+                    </div>
+                    
+                    <div class="goal-deadline">
+                        目标日期: ${new Date(goal.deadline).toLocaleDateString('zh-CN')} 
+                        ${remainingDays >= 0 ? `(还有${remainingDays}天)` : `(已过期${Math.abs(remainingDays)}天)`}
+                    </div>
+                    
+                    ${goal.description ? `<div class="goal-description">${goal.description}</div>` : ''}
+                    
+                    <div class="goal-actions">
+                        <button class="edit-goal-btn" onclick="moneyTracker.showGoalForm(${JSON.stringify(goal).replace(/"/g, '&quot;')})">编辑</button>
+                        <button class="delete-goal-btn" onclick="moneyTracker.deleteGoal('${goal.id}')">删除</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    calculateGoalProgress(goal) {
+        // 计算从目标创建到现在的收入总和
+        const goalStartDate = new Date(goal.createdAt);
+        const now = new Date();
+        
+        const relevantTransactions = this.transactions.filter(t => {
+            const transactionDate = new Date(t.date);
+            return transactionDate >= goalStartDate && 
+                   transactionDate <= now &&
+                   t.type === 'income' &&
+                   (!this.currentAccount || t.accountId === this.currentAccount.id);
+        });
+        
+        return relevantTransactions.reduce((sum, t) => sum + t.amount, 0);
+    }
+    
+    calculateRemainingDays(deadline) {
+        const deadlineDate = new Date(deadline);
+        const today = new Date();
+        const timeDiff = deadlineDate.getTime() - today.getTime();
+        return Math.ceil(timeDiff / (1000 * 3600 * 24));
     }
 }
 

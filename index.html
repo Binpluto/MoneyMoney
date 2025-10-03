@@ -80,6 +80,8 @@
                     </div>
                     <div class="user-info">
                         <button class="back-btn" id="back-to-accounts">返回账单</button>
+                        <button class="analysis-btn" id="analysis-btn">分析报告</button>
+                        <button class="goals-btn" id="goals-btn">理财目标</button>
                         <button class="backup-btn" id="backup-btn">备份数据</button>
                         <button class="logout-btn" id="logout-btn-main">退出</button>
                     </div>
@@ -163,6 +165,145 @@
                 </div>
             </section>
             </main>
+            
+            <!-- 分析报告界面 -->
+            <div id="analysis-view" class="analysis-view" style="display: none;">
+                <div class="analysis-header">
+                    <h2>财务分析报告</h2>
+                    <button class="close-analysis-btn" id="close-analysis-btn">返回</button>
+                </div>
+                
+                <div class="analysis-tabs">
+                    <button class="tab-btn active" data-tab="monthly">月度分析</button>
+                    <button class="tab-btn" data-tab="yearly">年度分析</button>
+                </div>
+                
+                <div class="analysis-content">
+                    <!-- 月度分析 -->
+                    <div id="monthly-analysis" class="tab-content active">
+                        <div class="date-selector">
+                            <select id="month-selector">
+                                <!-- 月份选项将动态生成 -->
+                            </select>
+                            <select id="year-selector">
+                                <!-- 年份选项将动态生成 -->
+                            </select>
+                        </div>
+                        
+                        <div class="analysis-summary">
+                            <div class="summary-card">
+                                <h4>月度总览</h4>
+                                <div class="summary-stats">
+                                    <div class="stat-row">
+                                        <span>总收入:</span>
+                                        <span id="monthly-total-income">¥0.00</span>
+                                    </div>
+                                    <div class="stat-row">
+                                        <span>总支出:</span>
+                                        <span id="monthly-total-expense">¥0.00</span>
+                                    </div>
+                                    <div class="stat-row">
+                                        <span>净收入:</span>
+                                        <span id="monthly-net-income">¥0.00</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="category-analysis">
+                                <h4>分类统计</h4>
+                                <div id="monthly-category-chart">
+                                    <!-- 分类图表将在这里生成 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 年度分析 -->
+                    <div id="yearly-analysis" class="tab-content">
+                        <div class="date-selector">
+                            <select id="year-analysis-selector">
+                                <!-- 年份选项将动态生成 -->
+                            </select>
+                        </div>
+                        
+                        <div class="analysis-summary">
+                            <div class="summary-card">
+                                <h4>年度总览</h4>
+                                <div class="summary-stats">
+                                    <div class="stat-row">
+                                        <span>总收入:</span>
+                                        <span id="yearly-total-income">¥0.00</span>
+                                    </div>
+                                    <div class="stat-row">
+                                        <span>总支出:</span>
+                                        <span id="yearly-total-expense">¥0.00</span>
+                                    </div>
+                                    <div class="stat-row">
+                                        <span>净收入:</span>
+                                        <span id="yearly-net-income">¥0.00</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="monthly-trend">
+                                <h4>月度趋势</h4>
+                                <div id="yearly-trend-chart">
+                                    <!-- 趋势图表将在这里生成 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 理财目标界面 -->
+            <div id="goals-view" class="goals-view" style="display: none;">
+                <div class="goals-header">
+                    <h2>理财目标</h2>
+                    <button class="close-goals-btn" id="close-goals-btn">返回</button>
+                </div>
+                
+                <div class="goals-actions">
+                    <button class="add-goal-btn" id="add-goal-btn">添加目标</button>
+                </div>
+                
+                <div class="goals-list" id="goals-list">
+                    <!-- 目标列表将在这里动态生成 -->
+                </div>
+                
+                <!-- 添加目标表单 -->
+                <div id="goal-form-modal" class="goal-form-modal" style="display: none;">
+                    <div class="goal-form-content">
+                        <h3 id="goal-form-title">添加理财目标</h3>
+                        <form id="goal-form">
+                            <div class="form-group">
+                                <label for="goal-name">目标名称</label>
+                                <input type="text" id="goal-name" placeholder="例如：买车、旅行" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="goal-amount">目标金额</label>
+                                <input type="number" id="goal-amount" step="0.01" placeholder="0.00" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="goal-deadline">目标日期</label>
+                                <input type="date" id="goal-deadline" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="goal-description">描述</label>
+                                <textarea id="goal-description" placeholder="目标描述（可选）"></textarea>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button type="submit" class="save-goal-btn">保存目标</button>
+                                <button type="button" class="cancel-goal-btn" id="cancel-goal-btn">取消</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
