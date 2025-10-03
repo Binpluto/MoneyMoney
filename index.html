@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简约记账</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- 登录注册界面 -->
+    <div class="auth-container" id="auth-container">
+        <div class="auth-box">
+            <h2 id="auth-title">登录</h2>
+            <form id="auth-form">
+                <div class="form-group">
+                    <label for="email">邮箱</label>
+                    <input type="email" id="email" placeholder="请输入邮箱地址" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <input type="password" id="password" placeholder="请输入密码" required>
+                </div>
+                
+                <div class="form-group" id="confirm-password-group" style="display: none;">
+                    <label for="confirm-password">确认密码</label>
+                    <input type="password" id="confirm-password" placeholder="请再次输入密码">
+                </div>
+                
+                <button type="submit" class="auth-btn" id="auth-submit-btn">登录</button>
+            </form>
+            
+            <div class="auth-switch">
+                <span id="auth-switch-text">还没有账号？</span>
+                <a href="#" id="auth-switch-link">立即注册</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主应用界面 -->
+    <div class="container" id="main-container" style="display: none;">
+        <header class="header">
+            <div class="header-top">
+                <h1>简约记账</h1>
+                <div class="user-info">
+                    <span id="current-user">用户</span>
+                    <button class="logout-btn" id="logout-btn">退出</button>
+                </div>
+            </div>
+            <div class="balance">
+                <span class="balance-label">余额</span>
+                <span class="balance-amount" id="balance">¥0.00</span>
+            </div>
+        </header>
+
+        <main class="main">
+            <section class="add-transaction">
+                <h2>添加记录</h2>
+                <form id="transaction-form">
+                    <div class="form-group">
+                        <label for="description">描述</label>
+                        <input type="text" id="description" placeholder="请输入描述" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="amount">金额</label>
+                        <input type="number" id="amount" step="0.01" placeholder="0.00" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="transaction-date">日期</label>
+                        <input type="date" id="transaction-date" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="category">分类</label>
+                        <select id="category" required>
+                            <option value="">选择分类</option>
+                            <option value="餐饮">餐饮</option>
+                            <option value="交通">交通</option>
+                            <option value="购物">购物</option>
+                            <option value="娱乐">娱乐</option>
+                            <option value="工资">工资</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>类型</label>
+                        <div class="type-buttons">
+                            <button type="button" class="type-btn active" data-type="expense">支出</button>
+                            <button type="button" class="type-btn" data-type="income">收入</button>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="submit-btn">添加记录</button>
+                </form>
+            </section>
+
+            <section class="statistics">
+                <div class="stats-grid">
+                    <div class="stat-item income">
+                        <span class="stat-label">本月收入</span>
+                        <span class="stat-amount" id="monthly-income">¥0.00</span>
+                    </div>
+                    <div class="stat-item expense">
+                        <span class="stat-label">本月支出</span>
+                        <span class="stat-amount" id="monthly-expense">¥0.00</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="transactions">
+                <h2>交易记录</h2>
+                <div class="transaction-list" id="transaction-list">
+                    <!-- 交易记录将在这里动态生成 -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
