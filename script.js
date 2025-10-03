@@ -10,6 +10,7 @@ class MoneyTracker {
         this.currentEditingGoal = null; // 当前编辑的目标
         this.ducks = 0; // 小黄鸭数量
         this.totalTransactions = 0; // 总交易次数
+        this.initEmailJS();
         this.init();
     }
 
@@ -40,6 +41,7 @@ class MoneyTracker {
         document.getElementById('current-user').textContent = this.currentUser;
         this.loadUserAccounts();
         this.showAccountSelection();
+        this.handleInviteLinkFromURL();
     }
 
     setDefaultDate() {
@@ -61,6 +63,32 @@ class MoneyTracker {
         document.getElementById('auth-switch-link').addEventListener('click', (e) => {
             e.preventDefault();
             this.toggleAuthMode();
+        });
+
+        // 忘记密码
+        document.getElementById('forgot-password-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            this.showForgotPasswordModal();
+        });
+
+        // 关闭忘记密码弹窗
+        document.getElementById('close-forgot-modal').addEventListener('click', () => {
+            this.hideForgotPasswordModal();
+        });
+
+        // 发送重置链接
+        document.getElementById('send-reset-btn').addEventListener('click', () => {
+            this.sendResetEmail();
+        });
+
+        // 重置密码
+        document.getElementById('reset-password-btn').addEventListener('click', () => {
+            this.resetPassword();
+        });
+
+        // 返回邮箱输入步骤
+        document.getElementById('back-to-email-btn').addEventListener('click', () => {
+            this.showEmailStep();
         });
 
         // 退出登录
@@ -107,6 +135,7 @@ class MoneyTracker {
         const confirmGroup = document.getElementById('confirm-password-group');
         const switchText = document.getElementById('auth-switch-text');
         const switchLink = document.getElementById('auth-switch-link');
+        const forgotPasswordLink = document.getElementById('forgot-password-link');
 
         if (this.isRegistering) {
             title.textContent = '注册';
@@ -114,12 +143,14 @@ class MoneyTracker {
             confirmGroup.style.display = 'block';
             switchText.textContent = '已有账号？';
             switchLink.textContent = '立即登录';
+            forgotPasswordLink.style.display = 'none';
         } else {
             title.textContent = '登录';
             submitBtn.textContent = '登录';
             confirmGroup.style.display = 'none';
             switchText.textContent = '还没有账号？';
             switchLink.textContent = '立即注册';
+            forgotPasswordLink.style.display = 'block';
         }
     }
 
@@ -157,7 +188,7 @@ class MoneyTracker {
     register(email, password) {
         const users = this.loadUsers();
         if (users[email]) {
-            alert('该邮箱已被注册');
+            alert('该邮箱已注册，请换其他邮箱注册或者直接登录');
             return;
         }
 
@@ -293,6 +324,28 @@ class MoneyTracker {
         if (addMemberBtn) {
             addMemberBtn.addEventListener('click', () => {
                 this.addMember();
+            });
+        }
+        
+        // 添加邮件邀请事件监听器
+        const inviteByEmailBtn = document.getElementById('invite-by-email-btn');
+        if (inviteByEmailBtn) {
+            inviteByEmailBtn.addEventListener('click', () => {
+                this.showEmailInviteForm();
+            });
+        }
+        
+        const sendInviteBtn = document.getElementById('send-invite-btn');
+        if (sendInviteBtn) {
+            sendInviteBtn.addEventListener('click', () => {
+                this.handleSendEmailInvite();
+            });
+        }
+        
+        const cancelInviteBtn = document.getElementById('cancel-invite-btn');
+        if (cancelInviteBtn) {
+            cancelInviteBtn.addEventListener('click', () => {
+                this.hideEmailInviteForm();
             });
         }
         
@@ -1394,6 +1447,287 @@ class MoneyTracker {
                 message.parentNode.removeChild(message);
             }
         }, 2000);
+    }
+
+    // EmailJS 邮件发送功能
+    initEmailJS() {
+        // 初始化 EmailJS
+        if (typeof emailjs !== 'undefined') {
+            emailjs.init({
+                publicKey: 'YOUR_PUBLIC_KEY', // 需要替换为实际的公钥
+            });
+        }
+    }
+
+    async sendInviteEmail(recipientEmail, accountName, inviteCode, inviterName, customMessage = '') {
+        if (typeof emailjs === 'undefined') {
+            alert('邮件服务未加载，请检查网络连接');
+            return false;
+        }
+
+        const inviteLink = `${window.location.origin}${window.location.pathname}?invite=${inviteCode}`;
+        
+        let message = `您好！${inviterName} 邀请您加入 "${accountName}" 账单。\n\n`;
+        if (customMessage) {
+            message += `邀请留言：${customMessage}\n\n`;
+        }
+        message += `您可以点击以下链接直接加入：\n${inviteLink}\n\n或者在应用中输入邀请码：${inviteCode}\n\n快来一起记账吧！`;
+        
+        const templateParams = {
+            to_email: recipientEmail,
+            to_name: recipientEmail.split('@')[0],
+            from_name: inviterName,
+            account_name: accountName,
+            invite_code: inviteCode,
+            invite_link: inviteLink,
+            message: message
+        };
+
+        try {
+            const response = await emailjs.send(
+                'YOUR_SERVICE_ID', // 需要替换为实际的服务ID
+                'YOUR_TEMPLATE_ID', // 需要替换为实际的模板ID
+                templateParams
+            );
+            
+            console.log('邮件发送成功:', response);
+            return true;
+        } catch (error) {
+            console.error('邮件发送失败:', error);
+            alert('邮件发送失败，请检查邮箱地址或稍后重试');
+            return false;
+        }
+    }
+
+    generateInviteLink(inviteCode) {
+        const baseUrl = window.location.origin + window.location.pathname;
+        return `${baseUrl}?invite=${inviteCode}`;
+    }
+
+    handleInviteLinkFromURL() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const inviteCode = urlParams.get('invite');
+        
+        if (inviteCode && this.currentUser) {
+            // 自动填入邀请码并尝试加入
+            const inviteInput = document.getElementById('invite-code-input');
+            if (inviteInput) {
+                inviteInput.value = inviteCode;
+                this.showInviteSection();
+                
+                // 询问用户是否要自动加入
+                if (confirm(`检测到邀请链接，邀请码为：${inviteCode}\n是否立即加入该账单？`)) {
+                    this.joinAccountByInviteCode();
+                }
+            }
+        }
+    }
+    
+    // 显示邮件邀请表单
+    showEmailInviteForm() {
+        const form = document.getElementById('email-invite-form');
+        if (form) {
+            form.style.display = 'block';
+            // 清空表单
+            document.getElementById('invite-email').value = '';
+            document.getElementById('invite-message').value = '';
+        }
+    }
+    
+    // 隐藏邮件邀请表单
+    hideEmailInviteForm() {
+        const form = document.getElementById('email-invite-form');
+        if (form) {
+            form.style.display = 'none';
+        }
+    }
+    
+    // 处理发送邮件邀请
+    async handleSendEmailInvite() {
+        const emailInput = document.getElementById('invite-email');
+        const messageInput = document.getElementById('invite-message');
+        
+        if (!emailInput || !messageInput) {
+            alert('表单元素未找到');
+            return;
+        }
+        
+        const email = emailInput.value.trim();
+        const message = messageInput.value.trim();
+        
+        if (!email) {
+            alert('请输入邮箱地址');
+            return;
+        }
+        
+        if (!this.isValidEmail(email)) {
+            alert('请输入有效的邮箱地址');
+            return;
+        }
+        
+        try {
+            // 生成邀请码
+            const inviteCode = this.generateInviteCode();
+            
+            // 发送邮件
+            await this.sendInviteEmail(
+                email, 
+                this.currentAccount.name, 
+                inviteCode, 
+                this.currentUser.email,
+                message
+            );
+            
+            alert('邀请邮件发送成功！');
+            this.hideEmailInviteForm();
+            
+        } catch (error) {
+            console.error('发送邮件失败:', error);
+            alert('发送邮件失败，请检查网络连接或稍后重试');
+        }
+    }
+
+    // 忘记密码功能
+    showForgotPasswordModal() {
+        document.getElementById('forgot-password-modal').style.display = 'flex';
+        this.showEmailStep();
+    }
+
+    hideForgotPasswordModal() {
+        document.getElementById('forgot-password-modal').style.display = 'none';
+        this.clearForgotPasswordForm();
+    }
+
+    showEmailStep() {
+        document.getElementById('step-email').style.display = 'block';
+        document.getElementById('step-reset').style.display = 'none';
+    }
+
+    showResetStep() {
+        document.getElementById('step-email').style.display = 'none';
+        document.getElementById('step-reset').style.display = 'block';
+    }
+
+    async sendResetEmail() {
+        const email = document.getElementById('reset-email').value.trim();
+        
+        if (!email) {
+            alert('请输入邮箱地址');
+            return;
+        }
+
+        if (!this.isValidEmail(email)) {
+            alert('请输入有效的邮箱地址');
+            return;
+        }
+
+        const users = this.loadUsers();
+        if (!users[email]) {
+            alert('该邮箱未注册，请检查邮箱地址或先注册账号');
+            return;
+        }
+
+        // 生成6位数字验证码
+        const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        // 保存验证码到localStorage（实际应用中应该保存到服务器）
+        const resetCodes = JSON.parse(localStorage.getItem('money-tracker-reset-codes') || '{}');
+        resetCodes[email] = {
+            code: resetCode,
+            timestamp: Date.now(),
+            expires: Date.now() + 10 * 60 * 1000 // 10分钟过期
+        };
+        localStorage.setItem('money-tracker-reset-codes', JSON.stringify(resetCodes));
+
+        try {
+            // 发送重置邮件
+            await this.sendResetCodeEmail(email, resetCode);
+            alert('验证码已发送到您的邮箱，请查收（有效期10分钟）');
+            this.showResetStep();
+        } catch (error) {
+            console.error('发送邮件失败:', error);
+            alert('发送邮件失败，请稍后重试');
+        }
+    }
+
+    async sendResetCodeEmail(email, resetCode) {
+        // 使用EmailJS发送重置验证码邮件
+        const templateParams = {
+            to_email: email,
+            reset_code: resetCode,
+            app_name: '记账小助手',
+            expires_in: '10分钟'
+        };
+
+        // 注意：需要在EmailJS中创建对应的邮件模板
+        await emailjs.send('YOUR_SERVICE_ID', 'YOUR_RESET_TEMPLATE_ID', templateParams, 'YOUR_PUBLIC_KEY');
+    }
+
+    resetPassword() {
+        const email = document.getElementById('reset-email').value.trim();
+        const code = document.getElementById('reset-code').value.trim();
+        const newPassword = document.getElementById('new-password').value;
+        const confirmPassword = document.getElementById('confirm-new-password').value;
+
+        if (!code) {
+            alert('请输入验证码');
+            return;
+        }
+
+        if (!newPassword) {
+            alert('请输入新密码');
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            alert('两次输入的密码不一致');
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            alert('密码长度至少6位');
+            return;
+        }
+
+        // 验证重置码
+        const resetCodes = JSON.parse(localStorage.getItem('money-tracker-reset-codes') || '{}');
+        const resetData = resetCodes[email];
+
+        if (!resetData) {
+            alert('验证码无效，请重新获取');
+            return;
+        }
+
+        if (Date.now() > resetData.expires) {
+            alert('验证码已过期，请重新获取');
+            delete resetCodes[email];
+            localStorage.setItem('money-tracker-reset-codes', JSON.stringify(resetCodes));
+            return;
+        }
+
+        if (resetData.code !== code) {
+            alert('验证码错误');
+            return;
+        }
+
+        // 更新密码
+        const users = this.loadUsers();
+        users[email].password = newPassword;
+        localStorage.setItem('money-tracker-users', JSON.stringify(users));
+
+        // 清除验证码
+        delete resetCodes[email];
+        localStorage.setItem('money-tracker-reset-codes', JSON.stringify(resetCodes));
+
+        alert('密码重置成功！请使用新密码登录');
+        this.hideForgotPasswordModal();
+    }
+
+    clearForgotPasswordForm() {
+        document.getElementById('reset-email').value = '';
+        document.getElementById('reset-code').value = '';
+        document.getElementById('new-password').value = '';
+        document.getElementById('confirm-new-password').value = '';
     }
 }
 

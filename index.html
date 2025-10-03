@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>followYOUmoney</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- EmailJS CDN -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
 <body>
     <!-- 登录注册界面 -->
@@ -30,9 +32,51 @@
                 <button type="submit" class="auth-btn" id="auth-submit-btn">登录</button>
             </form>
             
+            <!-- 忘记密码链接 -->
+            <div class="forgot-password-link" id="forgot-password-link" style="display: none;">
+                <a href="#" id="forgot-password-btn">忘记密码？</a>
+            </div>
+            
             <div class="auth-switch">
                 <span id="auth-switch-text">还没有账号？</span>
                 <a href="#" id="auth-switch-link">立即注册</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 忘记密码弹窗 -->
+    <div class="modal" id="forgot-password-modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>重置密码</h3>
+                <span class="close" id="close-forgot-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="step" id="step-email">
+                    <p>请输入您的注册邮箱，我们将发送重置密码的链接到您的邮箱。</p>
+                    <div class="form-group">
+                        <label for="reset-email">邮箱地址</label>
+                        <input type="email" id="reset-email" placeholder="请输入注册邮箱" required>
+                    </div>
+                    <button class="auth-btn" id="send-reset-btn">发送重置链接</button>
+                </div>
+                <div class="step" id="step-reset" style="display: none;">
+                    <p>请输入您收到的验证码和新密码。</p>
+                    <div class="form-group">
+                        <label for="reset-code">验证码</label>
+                        <input type="text" id="reset-code" placeholder="请输入验证码" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="new-password">新密码</label>
+                        <input type="password" id="new-password" placeholder="请输入新密码" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm-new-password">确认新密码</label>
+                        <input type="password" id="confirm-new-password" placeholder="请再次输入新密码" required>
+                    </div>
+                    <button class="auth-btn" id="reset-password-btn">重置密码</button>
+                    <button class="secondary-btn" id="back-to-email-btn">返回</button>
+                </div>
             </div>
         </div>
     </div>
@@ -101,7 +145,27 @@
                     <div class="members-list" id="members-list">
                         <!-- 成员列表将在这里动态生成 -->
                     </div>
-                    <button class="add-member-btn" id="add-member-btn">添加成员</button>
+                    <div class="add-member-section">
+                        <button class="add-member-btn" id="add-member-btn">添加成员</button>
+                        <button class="invite-by-email-btn" id="invite-by-email-btn">邮件邀请</button>
+                    </div>
+                    
+                    <!-- 邮件邀请表单 -->
+                    <div class="email-invite-form" id="email-invite-form" style="display: none;">
+                        <h5>发送邮件邀请</h5>
+                        <div class="form-group">
+                            <label for="invite-email">邮箱地址</label>
+                            <input type="email" id="invite-email" placeholder="请输入邀请对象的邮箱" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="invite-message">邀请消息（可选）</label>
+                            <textarea id="invite-message" placeholder="添加个人消息..." rows="3"></textarea>
+                        </div>
+                        <div class="email-invite-actions">
+                            <button class="send-invite-btn" id="send-invite-btn">发送邀请</button>
+                            <button class="cancel-invite-btn" id="cancel-invite-btn">取消</button>
+                        </div>
+                    </div>
                 </div>
             </header>
 
