@@ -32,6 +32,16 @@ class MoneyTracker {
         };
         this.exchangeApiKey = null; // 汇率API密钥
         
+        // 每日提醒设置
+        this.reminderSettings = {
+            enabled: false,
+            time: '20:00', // 默认晚上8点提醒
+            method: 'popup', // popup 或 email
+            email: '',
+            lastReminded: null // 最后一次提醒的日期
+        };
+        this.reminderTimer = null;
+        
         this.initEmailJS();
         this.init();
     }
@@ -45,6 +55,7 @@ class MoneyTracker {
         this.initCurrencySelect();
         this.loadExchangeRates(); // 加载汇率缓存
         this.updateCategorySelector(); // 初始化分类选择器
+        this.setupReminderTimer(); // 初始化提醒定时器
     }
 
     checkAuthStatus() {
@@ -156,6 +167,33 @@ class MoneyTracker {
         // 分类管理按钮事件
         document.getElementById('category-manage-btn').addEventListener('click', () => {
             this.showCategoryManage();
+        });
+        
+        // 提醒设置按钮事件
+        document.getElementById('reminder-settings-btn').addEventListener('click', () => {
+            this.showReminderSettings();
+        });
+        
+        // 提醒设置保存按钮
+        document.getElementById('save-reminder-settings').addEventListener('click', () => {
+            this.saveReminderSettings();
+        });
+        
+        // 提醒设置取消按钮
+        document.getElementById('cancel-reminder-settings').addEventListener('click', () => {
+            this.hideReminderSettings();
+        });
+        
+        // 提醒方式切换事件
+        document.querySelectorAll('input[name="reminder-method"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                this.toggleReminderEmailField(e.target.value);
+            });
+        });
+        
+        // 提醒开关切换事件
+        document.getElementById('reminder-enabled').addEventListener('change', (e) => {
+            this.toggleReminderFields(e.target.checked);
         });
         
         document.getElementById('cancel-category-btn').addEventListener('click', () => {
@@ -2172,6 +2210,204 @@ class MoneyTracker {
         });
         
         categoryList.innerHTML = html;
+    }
+    
+    // 提醒设置相关方法
+    showReminderSettings() {
+        this.loadReminderSettings();
+        document.getElementById('reminder-settings-modal').style.display = 'flex';
+    }
+    
+    hideReminderSettings() {
+        document.getElementById('reminder-settings-modal').style.display = 'none';
+    }
+    
+    toggleReminderFields(enabled) {
+        const timeGroup = document.getElementById('reminder-time-group');
+        const methodGroup = document.getElementById('reminder-method-group');
+        const emailGroup = document.getElementById('reminder-email-group');
+        
+        if (enabled) {
+            timeGroup.style.display = 'block';
+            methodGroup.style.display = 'block';
+            // 根据当前选择的方式决定是否显示邮箱字段
+            const selectedMethod = document.querySelector('input[name="reminder-method"]:checked').value;
+            emailGroup.style.display = selectedMethod === 'email' ? 'block' : 'none';
+        } else {
+            timeGroup.style.display = 'none';
+            methodGroup.style.display = 'none';
+            emailGroup.style.display = 'none';
+        }
+    }
+    
+    toggleReminderEmailField(method) {
+        const emailGroup = document.getElementById('reminder-email-group');
+        emailGroup.style.display = method === 'email' ? 'block' : 'none';
+    }
+    
+    saveReminderSettings() {
+        const enabled = document.getElementById('reminder-enabled').checked;
+        const time = document.getElementById('reminder-time').value;
+        const method = document.querySelector('input[name="reminder-method"]:checked').value;
+        const email = document.getElementById('reminder-email').value;
+        
+        // 验证邮箱地址（如果选择了邮件提醒）
+        if (enabled && method === 'email' && (!email || !this.isValidEmail(email))) {
+            alert('请输入有效的邮箱地址');
+            return;
+        }
+        
+        this.reminderSettings = {
+            enabled,
+            time,
+            method,
+            email,
+            lastReminded: this.reminderSettings.lastReminded
+        };
+        
+        // 保存到本地存储
+        localStorage.setItem(`reminder-settings-${this.currentUser}`, JSON.stringify(this.reminderSettings));
+        
+        // 重新设置提醒定时器
+        this.setupReminderTimer();
+        
+        this.hideReminderSettings();
+        alert('提醒设置已保存');
+    }
+    
+    loadReminderSettings() {
+        const saved = localStorage.getItem(`reminder-settings-${this.currentUser}`);
+        if (saved) {
+            this.reminderSettings = JSON.parse(saved);
+        }
+        
+        // 更新界面
+        document.getElementById('reminder-enabled').checked = this.reminderSettings.enabled;
+        document.getElementById('reminder-time').value = this.reminderSettings.time;
+        document.querySelector(`input[name="reminder-method"][value="${this.reminderSettings.method}"]`).checked = true;
+        document.getElementById('reminder-email').value = this.reminderSettings.email || '';
+        
+        // 更新字段显示状态
+        this.toggleReminderFields(this.reminderSettings.enabled);
+        this.toggleReminderEmailField(this.reminderSettings.method);
+    }
+    
+    setupReminderTimer() {
+        // 清除现有定时器
+        if (this.reminderTimer) {
+            clearTimeout(this.reminderTimer);
+            this.reminderTimer = null;
+        }
+        
+        if (!this.reminderSettings.enabled) {
+            return;
+        }
+        
+        const now = new Date();
+        const today = now.toDateString();
+        
+        // 检查今天是否已经提醒过
+        if (this.reminderSettings.lastReminded === today) {
+            // 今天已经提醒过，设置明天的提醒
+            this.setNextDayReminder();
+            return;
+        }
+        
+        // 解析提醒时间
+        const [hours, minutes] = this.reminderSettings.time.split(':').map(Number);
+        const reminderTime = new Date();
+        reminderTime.setHours(hours, minutes, 0, 0);
+        
+        let delay;
+        if (reminderTime > now) {
+            // 今天的提醒时间还没到
+            delay = reminderTime.getTime() - now.getTime();
+        } else {
+            // 今天的提醒时间已过，设置明天的提醒
+            reminderTime.setDate(reminderTime.getDate() + 1);
+            delay = reminderTime.getTime() - now.getTime();
+        }
+        
+        this.reminderTimer = setTimeout(() => {
+            this.triggerReminder();
+        }, delay);
+    }
+    
+    setNextDayReminder() {
+        const [hours, minutes] = this.reminderSettings.time.split(':').map(Number);
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(hours, minutes, 0, 0);
+        
+        const delay = tomorrow.getTime() - new Date().getTime();
+        this.reminderTimer = setTimeout(() => {
+            this.triggerReminder();
+        }, delay);
+    }
+    
+    triggerReminder() {
+        const today = new Date().toDateString();
+        
+        // 更新最后提醒日期
+        this.reminderSettings.lastReminded = today;
+        localStorage.setItem(`reminder-settings-${this.currentUser}`, JSON.stringify(this.reminderSettings));
+        
+        // 根据设置的方式发送提醒
+        if (this.reminderSettings.method === 'popup') {
+            this.showPopupReminder();
+        } else if (this.reminderSettings.method === 'email') {
+            this.sendEmailReminder();
+        }
+        
+        // 设置明天的提醒
+        this.setNextDayReminder();
+    }
+    
+    showPopupReminder() {
+        // 检查浏览器通知权限
+        if ('Notification' in window) {
+            if (Notification.permission === 'granted') {
+                new Notification('记账提醒', {
+                    body: '别忘了记录今天的收支哦！',
+                    icon: '/favicon.ico'
+                });
+            } else if (Notification.permission !== 'denied') {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        new Notification('记账提醒', {
+                            body: '别忘了记录今天的收支哦！',
+                            icon: '/favicon.ico'
+                        });
+                    }
+                });
+            }
+        }
+        
+        // 同时显示页面内弹窗
+        alert('📝 记账提醒\n\n别忘了记录今天的收支哦！');
+    }
+    
+    async sendEmailReminder() {
+        if (!this.reminderSettings.email) {
+            console.error('邮箱地址未设置');
+            return;
+        }
+        
+        try {
+            const templateParams = {
+                to_email: this.reminderSettings.email,
+                to_name: this.currentUser,
+                subject: '每日记账提醒',
+                message: '别忘了记录今天的收支哦！保持良好的记账习惯，让财务管理更轻松。'
+            };
+            
+            await emailjs.send('service_reminder', 'template_reminder', templateParams);
+            console.log('提醒邮件发送成功');
+        } catch (error) {
+            console.error('提醒邮件发送失败:', error);
+            // 邮件发送失败时，显示弹窗提醒作为备选方案
+            this.showPopupReminder();
+        }
     }
 }
 

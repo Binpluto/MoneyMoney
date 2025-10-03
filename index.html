@@ -132,6 +132,7 @@
                         <button class="analysis-btn" id="analysis-btn">分析报告</button>
                         <button class="goals-btn" id="goals-btn">理财目标</button>
                         <button class="category-manage-btn" id="category-manage-btn">分类管理</button>
+                        <button class="reminder-settings-btn" id="reminder-settings-btn">提醒设置</button>
                         <button class="currency-settings-btn" id="currency-settings-btn">货币设置</button>
                         <button class="backup-btn" id="backup-btn">备份数据</button>
                         <button class="logout-btn" id="logout-btn-main">退出</button>
@@ -383,6 +384,49 @@
                     </div>
                 </div>
 
+                <!-- 提醒设置模态框 -->
+                <div id="reminder-settings-modal" class="modal" style="display: none;">
+                    <div class="modal-content">
+                        <h3>每日记录提醒设置</h3>
+                        
+                        <div class="form-group">
+                            <label class="switch">
+                                <input type="checkbox" id="reminder-enabled">
+                                <span class="slider">启用每日提醒</span>
+                            </label>
+                        </div>
+                        
+                        <div class="form-group" id="reminder-time-group">
+                            <label for="reminder-time">提醒时间</label>
+                            <input type="time" id="reminder-time" value="20:00">
+                        </div>
+                        
+                        <div class="form-group" id="reminder-method-group">
+                            <label>提醒方式</label>
+                            <div class="radio-group">
+                                <label class="radio-option">
+                                    <input type="radio" name="reminder-method" value="popup" checked>
+                                    <span>网页弹窗</span>
+                                </label>
+                                <label class="radio-option">
+                                    <input type="radio" name="reminder-method" value="email">
+                                    <span>邮件提醒</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group" id="reminder-email-group" style="display: none;">
+                            <label for="reminder-email">邮箱地址</label>
+                            <input type="email" id="reminder-email" placeholder="请输入邮箱地址">
+                        </div>
+                        
+                        <div class="modal-actions">
+                            <button class="save-btn" id="save-reminder-settings">保存设置</button>
+                            <button class="cancel-btn" id="cancel-reminder-settings">取消</button>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- 货币设置模态框 -->
                 <!-- 分类管理模态框 -->
                 <div id="category-manage-modal" class="modal" style="display: none;">
