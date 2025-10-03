@@ -8,6 +8,8 @@ class MoneyTracker {
         this.currentAccount = null; // 当前选中的账单
         this.goals = []; // 理财目标
         this.currentEditingGoal = null; // 当前编辑的目标
+        this.ducks = 0; // 小黄鸭数量
+        this.totalTransactions = 0; // 总交易次数
         this.init();
     }
 
@@ -295,6 +297,7 @@ class MoneyTracker {
         }
         
         this.transactions = this.loadTransactions();
+        this.loadDuckData();
         this.updateDisplay();
     }
 
@@ -661,6 +664,10 @@ class MoneyTracker {
         this.transactions.unshift(transaction);
         this.saveTransactions();
         this.autoBackup(); // 自动备份
+        
+        // 奖励小黄鸭
+        this.rewardDuck();
+        
         this.updateDisplay();
         this.clearForm();
     }
@@ -1309,6 +1316,84 @@ class MoneyTracker {
         const today = new Date();
         const timeDiff = deadlineDate.getTime() - today.getTime();
         return Math.ceil(timeDiff / (1000 * 3600 * 24));
+    }
+
+    // 小黄鸭奖励系统
+    rewardDuck() {
+        this.ducks += 1;
+        this.totalTransactions += 1;
+        this.saveDuckData();
+        this.updateDuckDisplay();
+        this.playDuckAnimation();
+    }
+
+    loadDuckData() {
+        const accountKey = this.currentAccount ? this.currentAccount.id : 'default';
+        const duckData = JSON.parse(localStorage.getItem(`ducks_${this.currentUser}_${accountKey}`)) || { ducks: 0, totalTransactions: 0 };
+        this.ducks = duckData.ducks;
+        this.totalTransactions = duckData.totalTransactions;
+        this.updateDuckDisplay();
+    }
+
+    saveDuckData() {
+        const accountKey = this.currentAccount ? this.currentAccount.id : 'default';
+        const duckData = {
+            ducks: this.ducks,
+            totalTransactions: this.totalTransactions
+        };
+        localStorage.setItem(`ducks_${this.currentUser}_${accountKey}`, JSON.stringify(duckData));
+    }
+
+    updateDuckDisplay() {
+        const duckCountEl = document.getElementById('duck-count');
+        if (duckCountEl) {
+            duckCountEl.textContent = this.ducks;
+        }
+    }
+
+    playDuckAnimation() {
+        const duckCollection = document.querySelector('.duck-collection');
+        if (duckCollection) {
+            duckCollection.classList.add('duck-reward-animation');
+            
+            // 显示奖励提示
+            this.showDuckRewardMessage();
+            
+            setTimeout(() => {
+                duckCollection.classList.remove('duck-reward-animation');
+            }, 600);
+        }
+    }
+
+    showDuckRewardMessage() {
+        // 创建奖励消息元素
+        const message = document.createElement('div');
+        message.className = 'duck-reward-message';
+        message.textContent = '+1 🦆';
+        message.style.cssText = `
+            position: fixed;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            color: #b8860b;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+            z-index: 10000;
+            animation: duck-message-show 2s ease-out forwards;
+        `;
+        
+        document.body.appendChild(message);
+        
+        // 2秒后移除消息
+        setTimeout(() => {
+            if (message.parentNode) {
+                message.parentNode.removeChild(message);
+            }
+        }, 2000);
     }
 }
 
