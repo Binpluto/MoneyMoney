@@ -318,13 +318,13 @@ class MoneyTracker {
                         <div class="invite-code-display">
                             <span class="invite-label">邀请码:</span>
                             <code class="invite-code">${account.inviteCode || account.id.substr(-6)}</code>
-                            <button class="copy-invite-btn" onclick="moneyTracker.copyInviteCode('${account.inviteCode || account.id.substr(-6)}')">复制</button>
+                            <button class="copy-invite-btn" onclick="app.copyInviteCode('${account.inviteCode || account.id.substr(-6)}')">复制</button>
                         </div>
                     ` : ''}
                 </div>
                 <div class="account-actions">
-                    <button class="select-account-btn" onclick="moneyTracker.selectAccount('${account.id}')">选择</button>
-                    <button class="delete-account-btn" onclick="moneyTracker.deleteAccount('${account.id}')">删除</button>
+                    <button class="select-account-btn" onclick="app.selectAccount('${account.id}')">选择</button>
+                    <button class="delete-account-btn" onclick="app.deleteAccount('${account.id}')">删除</button>
                 </div>
             </div>
         `).join('');
