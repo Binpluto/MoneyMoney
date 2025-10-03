@@ -529,26 +529,26 @@ body {
 /* 主按钮容器 */
 .main-buttons {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 15px;
-    padding: 25px;
-    max-width: 900px;
-    margin: 20px auto;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    padding: 18px;
+    max-width: 800px;
+    margin: 15px auto;
     background: rgba(255, 255, 255, 0.8);
-    border-radius: 15px;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 /* 主按钮基础样式 */
 .main-buttons button {
-    padding: 14px 18px;
-    border-radius: 10px;
-    font-size: 14px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 12px;
     font-weight: 600;
     transition: all 0.3s ease;
     border: none;
     cursor: pointer;
-    min-height: 48px;
+    min-height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1939,11 +1939,11 @@ body {
     }
     
     .main-buttons button {
-        padding: 12px 8px;
-        border-radius: 8px;
-        font-size: 13px;
+        padding: 10px 6px;
+        border-radius: 6px;
+        font-size: 12px;
         font-weight: 600;
-        min-height: 44px;
+        min-height: 38px;
         text-align: center;
     }
     
@@ -2140,9 +2140,10 @@ body {
     }
     
     .main-buttons button {
-        padding: 10px 6px;
-        font-size: 12px;
-        min-height: 40px;
+        padding: 8px 4px;
+        font-size: 11px;
+        min-height: 36px;
+        border-radius: 6px;
     }
     
     /* 交易项目优化 */
