@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>简约记账</title>
+    <title>followYOUmoney</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -39,19 +39,65 @@
 
     <!-- 主应用界面 -->
     <div class="container" id="main-container" style="display: none;">
-        <header class="header">
-            <div class="header-top">
-                <h1>简约记账</h1>
+        <!-- 账单选择界面 -->
+        <div id="account-selection" class="account-selection">
+            <div class="account-header">
+                <h1>选择账单</h1>
                 <div class="user-info">
                     <span id="current-user">用户</span>
                     <button class="logout-btn" id="logout-btn">退出</button>
                 </div>
             </div>
-            <div class="balance">
-                <span class="balance-label">余额</span>
-                <span class="balance-amount" id="balance">¥0.00</span>
+            
+            <div class="account-actions">
+                <button class="create-account-btn" id="create-personal-btn">创建个人账单</button>
+                <button class="create-account-btn" id="create-family-btn">创建家庭账单</button>
+                <button class="create-account-btn" id="create-friend-btn">创建好友账单</button>
+                <button class="join-account-btn" id="join-account-btn">加入账单</button>
             </div>
-        </header>
+            
+            <!-- 邀请码输入区域 -->
+            <div class="invite-section" id="invite-section" style="display: none;">
+                <div class="invite-input-group">
+                    <input type="text" id="invite-code-input" placeholder="请输入邀请码" class="invite-code-input">
+                    <button class="join-btn" id="join-btn">加入</button>
+                    <button class="cancel-join-btn" id="cancel-join-btn">取消</button>
+                </div>
+            </div>
+            
+            <div class="account-list" id="account-list">
+                <!-- 账单列表将在这里动态生成 -->
+            </div>
+        </div>
+        
+        <!-- 主记账界面 -->
+        <div id="main-app" style="display: none;">
+            <header class="header">
+                <div class="header-top">
+                    <div class="app-title">
+                        <h1>followYOUmoney</h1>
+                        <p class="current-account" id="current-account-name">个人账单</p>
+                    </div>
+                    <div class="user-info">
+                        <button class="back-btn" id="back-to-accounts">返回账单</button>
+                        <button class="backup-btn" id="backup-btn">备份数据</button>
+                        <button class="logout-btn" id="logout-btn-main">退出</button>
+                    </div>
+                </div>
+                <div class="balance">
+                    <span class="balance-label">余额</span>
+                    <span class="balance-amount" id="balance">¥0.00</span>
+                </div>
+                
+                <!-- 账单成员信息 -->
+                <div class="account-members-info" id="account-members-info" style="display: none;">
+                    <h4>账单成员</h4>
+                    <div class="members-list" id="members-list">
+                        <!-- 成员列表将在这里动态生成 -->
+                    </div>
+                    <button class="add-member-btn" id="add-member-btn">添加成员</button>
+                </div>
+            </header>
 
         <main class="main">
             <section class="add-transaction">
@@ -116,7 +162,8 @@
                     <!-- 交易记录将在这里动态生成 -->
                 </div>
             </section>
-        </main>
+            </main>
+        </div>
     </div>
 
     <script src="script.js"></script>
