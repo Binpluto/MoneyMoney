@@ -10,14 +10,29 @@ class MoneyTracker {
         this.currentEditingGoal = null; // 当前编辑的目标
         this.ducks = 0; // 小黄鸭数量
         this.totalTransactions = 0; // 总交易次数
+        
+        // 多货币支持
+        this.exchangeRates = {}; // 汇率缓存
+        this.lastRateUpdate = null; // 上次汇率更新时间
+        this.defaultCurrency = 'CNY'; // 默认货币
+        this.supportedCurrencies = {
+            'CNY': { name: '人民币', symbol: '¥' },
+            'USD': { name: '美元', symbol: '$' },
+            'EUR': { name: '欧元', symbol: '€' }
+        };
+        this.exchangeApiKey = null; // 汇率API密钥
+        
         this.initEmailJS();
         this.init();
     }
 
     init() {
+        this.loadCurrencySettings();
         this.checkAuthStatus();
         this.bindEvents();
         this.setDefaultDate();
+        this.initCurrencySelect();
+        this.loadExchangeRates(); // 加载汇率缓存
     }
 
     checkAuthStatus() {
@@ -109,6 +124,21 @@ class MoneyTracker {
         // 理财目标按钮
         document.getElementById('goals-btn').addEventListener('click', () => {
             this.showGoalsView();
+        });
+
+        // 货币设置按钮
+        document.getElementById('currency-settings-btn').addEventListener('click', () => {
+            this.showCurrencySettings();
+        });
+
+        // 货币设置保存按钮
+        document.getElementById('save-currency-btn').addEventListener('click', () => {
+            this.saveCurrencySettings();
+        });
+
+        // 货币设置取消按钮
+        document.getElementById('cancel-currency-btn').addEventListener('click', () => {
+            this.hideCurrencySettings();
         });
 
         // 交易表单提交
@@ -675,13 +705,14 @@ class MoneyTracker {
         document.querySelector(`[data-type="${type}"]`).classList.add('active');
     }
 
-    addTransaction() {
+    async addTransaction() {
         const description = document.getElementById('description').value.trim();
         const amount = parseFloat(document.getElementById('amount').value);
         const category = document.getElementById('category').value;
         const transactionDate = document.getElementById('transaction-date').value;
+        const currency = document.getElementById('currency').value;
 
-        if (!description || !amount || !category || !transactionDate) {
+        if (!description || !amount || !category || !transactionDate || !currency) {
             alert('请填写完整信息');
             return;
         }
@@ -691,11 +722,17 @@ class MoneyTracker {
             return;
         }
 
+        // 转换为基准货币（CNY）
+        const baseAmount = await this.convertToBaseCurrency(amount, currency);
+        const finalAmount = this.currentType === 'expense' ? -baseAmount : baseAmount;
+
         const selectedDate = new Date(transactionDate);
         const transaction = {
             id: Date.now().toString(),
             description,
-            amount: this.currentType === 'expense' ? -amount : amount,
+            amount: finalAmount, // 基准货币金额
+            originalAmount: amount, // 原始输入金额
+            originalCurrency: currency, // 原始货币
             category,
             type: this.currentType,
             date: selectedDate.toISOString(),
@@ -737,6 +774,7 @@ class MoneyTracker {
         document.getElementById('description').value = '';
         document.getElementById('amount').value = '';
         document.getElementById('category').value = '';
+        document.getElementById('currency').value = this.defaultCurrency;
         this.setDefaultDate();
     }
 
@@ -748,7 +786,7 @@ class MoneyTracker {
 
     updateBalance() {
         const balance = this.transactions.reduce((sum, t) => sum + t.amount, 0);
-        document.getElementById('balance').textContent = this.formatCurrency(balance);
+        document.getElementById('balance').textContent = this.formatCurrencyWithSymbol(balance, this.defaultCurrency);
     }
 
     updateStatistics() {
@@ -784,7 +822,16 @@ class MoneyTracker {
         const transactionHTML = this.transactions.map(transaction => {
             const amountClass = transaction.type === 'income' ? 'income' : 'expense';
             const amountPrefix = transaction.type === 'income' ? '+' : '-';
-            const displayAmount = Math.abs(transaction.amount);
+            
+            // 显示原始货币和金额（如果存在），否则显示转换后的CNY金额
+            let displayAmount, currencySymbol;
+            if (transaction.originalAmount && transaction.originalCurrency) {
+                displayAmount = Math.abs(transaction.originalAmount);
+                currencySymbol = this.supportedCurrencies[transaction.originalCurrency]?.symbol || transaction.originalCurrency;
+            } else {
+                displayAmount = Math.abs(transaction.amount);
+                currencySymbol = this.supportedCurrencies[this.defaultCurrency].symbol;
+            }
 
             return `
                 <div class="transaction-item ${transaction.type}">
@@ -795,7 +842,7 @@ class MoneyTracker {
                             `<div class="transaction-recorder">记录者: ${transaction.recordedBy}</div>` : ''}
                     </div>
                     <div class="transaction-amount ${amountClass}">
-                        ${amountPrefix}${this.formatCurrency(displayAmount)}
+                        ${amountPrefix}${currencySymbol}${displayAmount.toFixed(2)}
                     </div>
                     <button class="delete-btn" onclick="app.deleteTransaction('${transaction.id}')">
                         删除
@@ -1728,6 +1775,186 @@ class MoneyTracker {
         document.getElementById('reset-code').value = '';
         document.getElementById('new-password').value = '';
         document.getElementById('confirm-new-password').value = '';
+    }
+
+    // 多货币支持方法
+    async getExchangeRates() {
+        // 检查缓存是否有效（1小时内）
+        const now = Date.now();
+        if (this.lastRateUpdate && (now - this.lastRateUpdate) < 3600000) {
+            return this.exchangeRates;
+        }
+
+        try {
+            // 使用免费的ExchangeRate-API
+            const response = await fetch('https://api.exchangerate-api.com/v4/latest/CNY');
+            const data = await response.json();
+            
+            if (data.rates) {
+                this.exchangeRates = {
+                    'CNY': 1, // 基准货币
+                    'USD': data.rates.USD || 0.14,
+                    'EUR': data.rates.EUR || 0.13
+                };
+                this.lastRateUpdate = now;
+                this.saveExchangeRates();
+                return this.exchangeRates;
+            }
+        } catch (error) {
+            console.warn('获取汇率失败，使用缓存或默认汇率:', error);
+        }
+
+        // 如果API失败，使用缓存或默认汇率
+        if (Object.keys(this.exchangeRates).length === 0) {
+            this.exchangeRates = {
+                'CNY': 1,
+                'USD': 0.14, // 默认汇率
+                'EUR': 0.13
+            };
+        }
+        
+        return this.exchangeRates;
+    }
+
+    saveExchangeRates() {
+        localStorage.setItem('exchange-rates', JSON.stringify({
+            rates: this.exchangeRates,
+            lastUpdate: this.lastRateUpdate
+        }));
+    }
+
+    loadExchangeRates() {
+        const saved = localStorage.getItem('exchange-rates');
+        if (saved) {
+            const data = JSON.parse(saved);
+            this.exchangeRates = data.rates || {};
+            this.lastRateUpdate = data.lastUpdate;
+        }
+    }
+
+    // 货币转换：将任意货币金额转换为默认货币（CNY）
+    async convertToBaseCurrency(amount, fromCurrency) {
+        if (fromCurrency === this.defaultCurrency) {
+            return amount;
+        }
+
+        const rates = await this.getExchangeRates();
+        const rate = rates[fromCurrency];
+        
+        if (!rate) {
+            console.warn(`未找到货币 ${fromCurrency} 的汇率`);
+            return amount;
+        }
+
+        // 从其他货币转换为CNY
+        return amount / rate;
+    }
+
+    // 从基准货币转换为指定货币
+    async convertFromBaseCurrency(amount, toCurrency) {
+        if (toCurrency === this.defaultCurrency) {
+            return amount;
+        }
+
+        const rates = await this.getExchangeRates();
+        const rate = rates[toCurrency];
+        
+        if (!rate) {
+            console.warn(`未找到货币 ${toCurrency} 的汇率`);
+            return amount;
+        }
+
+        return amount * rate;
+    }
+
+    // 格式化货币显示
+    formatCurrencyWithSymbol(amount, currency = this.defaultCurrency) {
+        const currencyInfo = this.supportedCurrencies[currency];
+        const symbol = currencyInfo ? currencyInfo.symbol : currency;
+        return `${symbol}${Math.abs(amount).toFixed(2)}`;
+    }
+
+    // 获取货币选项HTML
+    getCurrencyOptionsHTML() {
+        return Object.entries(this.supportedCurrencies)
+            .map(([code, info]) => `<option value="${code}">${info.name} (${info.symbol})</option>`)
+            .join('');
+    }
+
+    // 初始化货币选择下拉框
+    initCurrencySelect() {
+        const currencySelect = document.getElementById('currency');
+        if (currencySelect) {
+            currencySelect.innerHTML = this.getCurrencyOptionsHTML();
+            currencySelect.value = this.defaultCurrency;
+        }
+    }
+
+    // ===== 货币设置功能 =====
+    showCurrencySettings() {
+        const modal = document.getElementById('currency-settings-modal');
+        const defaultCurrencySelect = document.getElementById('default-currency');
+        const apiKeyInput = document.getElementById('exchange-api-key');
+        
+        // 设置当前值
+        defaultCurrencySelect.value = this.defaultCurrency;
+        apiKeyInput.value = this.exchangeApiKey || '';
+        
+        modal.style.display = 'flex';
+    }
+
+    hideCurrencySettings() {
+        const modal = document.getElementById('currency-settings-modal');
+        modal.style.display = 'none';
+    }
+
+    saveCurrencySettings() {
+        const defaultCurrency = document.getElementById('default-currency').value;
+        const apiKey = document.getElementById('exchange-api-key').value.trim();
+        
+        // 更新设置
+        this.defaultCurrency = defaultCurrency;
+        this.exchangeApiKey = apiKey;
+        
+        // 保存到本地存储
+        localStorage.setItem('defaultCurrency', defaultCurrency);
+        if (apiKey) {
+            localStorage.setItem('exchangeApiKey', apiKey);
+        } else {
+            localStorage.removeItem('exchangeApiKey');
+        }
+        
+        // 更新货币选择下拉框
+        this.initCurrencySelect();
+        
+        // 清除汇率缓存，强制重新获取
+        this.exchangeRates = {};
+        this.lastRateUpdate = null;
+        localStorage.removeItem('exchangeRates');
+        localStorage.removeItem('lastRateUpdate');
+        
+        // 重新获取汇率
+        this.getExchangeRates();
+        
+        // 更新显示
+        this.updateDisplay();
+        
+        this.hideCurrencySettings();
+        alert('货币设置已保存！');
+    }
+
+    // 加载货币设置
+    loadCurrencySettings() {
+        const savedCurrency = localStorage.getItem('defaultCurrency');
+        const savedApiKey = localStorage.getItem('exchangeApiKey');
+        
+        if (savedCurrency && this.supportedCurrencies[savedCurrency]) {
+            this.defaultCurrency = savedCurrency;
+        }
+        
+        if (savedApiKey) {
+            this.exchangeApiKey = savedApiKey;
+        }
     }
 }
 

@@ -129,7 +129,8 @@
                         </div>
                         <button class="back-btn" id="back-to-accounts">返回账单</button>
                         <button class="analysis-btn" id="analysis-btn">分析报告</button>
-                        <button class="goals-btn" id="goals-btn">理财目标</button>
+                    <button class="goals-btn" id="goals-btn">理财目标</button>
+                    <button class="currency-settings-btn" id="currency-settings-btn">货币设置</button>
                         <button class="backup-btn" id="backup-btn">备份数据</button>
                         <button class="logout-btn" id="logout-btn-main">退出</button>
                     </div>
@@ -180,7 +181,14 @@
                     
                     <div class="form-group">
                         <label for="amount">金额</label>
-                        <input type="number" id="amount" step="0.01" placeholder="0.00" required>
+                        <div class="amount-input-group">
+                            <input type="number" id="amount" step="0.01" placeholder="0.00" required>
+                            <select id="currency" class="currency-select">
+                                <option value="CNY">人民币 (¥)</option>
+                                <option value="USD">美元 ($)</option>
+                                <option value="EUR">欧元 (€)</option>
+                            </select>
+                        </div>
                     </div>
                     
                     <div class="form-group">
@@ -369,6 +377,32 @@
                                 <button type="button" class="cancel-goal-btn" id="cancel-goal-btn">取消</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+
+                <!-- 货币设置模态框 -->
+                <div id="currency-settings-modal" class="modal" style="display: none;">
+                    <div class="modal-content">
+                        <h3>货币设置</h3>
+                        <div class="form-group">
+                            <label for="default-currency">默认货币</label>
+                            <select id="default-currency" class="currency-select">
+                                <option value="CNY">人民币 (¥)</option>
+                                <option value="USD">美元 ($)</option>
+                                <option value="EUR">欧元 (€)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="exchange-api-key">汇率API密钥（可选）</label>
+                            <input type="text" id="exchange-api-key" placeholder="输入ExchangeRate-API密钥以获取更准确的汇率">
+                            <small>免费版本每月1500次请求，无需API密钥</small>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="button" class="save-currency-btn" id="save-currency-btn">保存设置</button>
+                            <button type="button" class="cancel-btn" id="cancel-currency-btn">取消</button>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -526,8 +526,8 @@ body {
     box-shadow: 0 5px 15px rgba(245, 101, 101, 0.3);
 }
 
-/* 分析报告和理财目标按钮 */
-.analysis-btn, .goals-btn {
+/* 分析报告、理财目标和货币设置按钮 */
+.analysis-btn, .goals-btn, .currency-settings-btn {
     background-color: #28a745;
     color: white;
     border: none;
@@ -538,8 +538,16 @@ body {
     margin-left: 10px;
 }
 
-.analysis-btn:hover, .goals-btn:hover {
+.analysis-btn:hover, .goals-btn:hover, .currency-settings-btn:hover {
     background-color: #218838;
+}
+
+.currency-settings-btn {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.currency-settings-btn:hover {
+    background: linear-gradient(135deg, #e082ea 0%, #e4465b 100%);
 }
 
 /* 分析报告界面 */
@@ -1121,6 +1129,36 @@ body {
 }
 
 .form-group input:focus, .form-group select:focus {
+    outline: none;
+    border-color: #7fb069;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(127, 176, 105, 0.1);
+}
+
+/* 货币选择组件样式 */
+.amount-input-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.amount-input-group input {
+    flex: 2;
+    margin-bottom: 0;
+}
+
+.currency-select {
+    flex: 1;
+    padding: 15px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background: #f7fafc;
+    margin-bottom: 0;
+}
+
+.currency-select:focus {
     outline: none;
     border-color: #7fb069;
     background: white;
