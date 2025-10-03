@@ -127,12 +127,15 @@
                             <div class="duck-icon">🦆</div>
                             <span class="duck-count" id="duck-count">0</span>
                         </div>
+                        <div class="main-buttons">
                         <button class="back-btn" id="back-to-accounts">返回账单</button>
                         <button class="analysis-btn" id="analysis-btn">分析报告</button>
-                    <button class="goals-btn" id="goals-btn">理财目标</button>
-                    <button class="currency-settings-btn" id="currency-settings-btn">货币设置</button>
+                        <button class="goals-btn" id="goals-btn">理财目标</button>
+                        <button class="category-manage-btn" id="category-manage-btn">分类管理</button>
+                        <button class="currency-settings-btn" id="currency-settings-btn">货币设置</button>
                         <button class="backup-btn" id="backup-btn">备份数据</button>
                         <button class="logout-btn" id="logout-btn-main">退出</button>
+                    </div>
                     </div>
                 </div>
                 <div class="balance">
@@ -381,6 +384,42 @@
                 </div>
 
                 <!-- 货币设置模态框 -->
+                <!-- 分类管理模态框 -->
+                <div id="category-manage-modal" class="modal" style="display: none;">
+                    <div class="modal-content">
+                        <h3>分类管理</h3>
+                        
+                        <!-- 分类类型切换 -->
+                        <div class="category-type-tabs">
+                            <button class="category-tab-btn active" data-category-type="expense">支出分类</button>
+                            <button class="category-tab-btn" data-category-type="income">收入分类</button>
+                        </div>
+                        
+                        <!-- 添加新分类 -->
+                        <div class="add-category-section">
+                            <div class="form-group">
+                                <label for="new-category-name">新分类名称</label>
+                                <div class="add-category-input-group">
+                                    <input type="text" id="new-category-name" placeholder="输入分类名称" maxlength="20">
+                                    <button type="button" class="add-category-btn" id="add-category-btn">添加</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 分类列表 -->
+                        <div class="category-list-section">
+                            <h4>当前分类</h4>
+                            <div class="category-list" id="category-list">
+                                <!-- 分类列表将在这里动态生成 -->
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="button" class="cancel-btn" id="cancel-category-btn">关闭</button>
+                        </div>
+                    </div>
+                </div>
+                
                 <div id="currency-settings-modal" class="modal" style="display: none;">
                     <div class="modal-content">
                         <h3>货币设置</h3>

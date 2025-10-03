@@ -11,6 +11,16 @@ class MoneyTracker {
         this.ducks = 0; // 小黄鸭数量
         this.totalTransactions = 0; // 总交易次数
         
+        // 自定义分类管理
+        this.categories = {
+            expense: ['餐饮', '交通', '购物', '娱乐', '其他'],
+            income: ['工资', '奖金', '投资收益', '其他']
+        }; // 默认分类
+        this.customCategories = {
+            expense: [],
+            income: []
+        }; // 用户自定义分类
+        
         // 多货币支持
         this.exchangeRates = {}; // 汇率缓存
         this.lastRateUpdate = null; // 上次汇率更新时间
@@ -28,11 +38,13 @@ class MoneyTracker {
 
     init() {
         this.loadCurrencySettings();
+        this.loadCustomCategories();
         this.checkAuthStatus();
         this.bindEvents();
         this.setDefaultDate();
         this.initCurrencySelect();
         this.loadExchangeRates(); // 加载汇率缓存
+        this.updateCategorySelector(); // 初始化分类选择器
     }
 
     checkAuthStatus() {
@@ -139,6 +151,33 @@ class MoneyTracker {
         // 货币设置取消按钮
         document.getElementById('cancel-currency-btn').addEventListener('click', () => {
             this.hideCurrencySettings();
+        });
+
+        // 分类管理按钮事件
+        document.getElementById('category-manage-btn').addEventListener('click', () => {
+            this.showCategoryManage();
+        });
+        
+        document.getElementById('cancel-category-btn').addEventListener('click', () => {
+            this.hideCategoryManage();
+        });
+        
+        document.getElementById('add-category-btn').addEventListener('click', () => {
+            this.handleAddCategory();
+        });
+        
+        // 分类类型切换事件
+        document.querySelectorAll('.category-tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.switchCategoryType(e.target.dataset.categoryType);
+            });
+        });
+        
+        // 新分类输入框回车事件
+        document.getElementById('new-category-name').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.handleAddCategory();
+            }
         });
 
         // 交易表单提交
@@ -703,6 +742,9 @@ class MoneyTracker {
             btn.classList.remove('active');
         });
         document.querySelector(`[data-type="${type}"]`).classList.add('active');
+        
+        // 更新分类选择器以显示对应类型的分类
+        this.updateCategorySelector();
     }
 
     async addTransaction() {
@@ -1955,6 +1997,181 @@ class MoneyTracker {
         if (savedApiKey) {
             this.exchangeApiKey = savedApiKey;
         }
+    }
+
+    // 分类管理方法
+    // 获取所有分类（默认 + 自定义）
+    getAllCategories(type = 'expense') {
+        return [...this.categories[type], ...this.customCategories[type]];
+    }
+
+    // 添加自定义分类
+    addCustomCategory(categoryName, type = 'expense') {
+        if (!categoryName || categoryName.trim() === '') {
+            return { success: false, message: '分类名称不能为空' };
+        }
+
+        const trimmedName = categoryName.trim();
+        const allCategories = this.getAllCategories(type);
+        
+        if (allCategories.includes(trimmedName)) {
+            return { success: false, message: '分类已存在' };
+        }
+
+        this.customCategories[type].push(trimmedName);
+        this.saveCustomCategories();
+        return { success: true, message: '分类添加成功' };
+    }
+
+    // 删除自定义分类
+    deleteCustomCategory(categoryName, type = 'expense') {
+        const index = this.customCategories[type].indexOf(categoryName);
+        if (index === -1) {
+            return { success: false, message: '分类不存在或为系统默认分类' };
+        }
+
+        this.customCategories[type].splice(index, 1);
+        this.saveCustomCategories();
+        return { success: true, message: '分类删除成功' };
+    }
+
+    // 保存自定义分类到本地存储
+    saveCustomCategories() {
+        const accountKey = this.currentAccount ? this.currentAccount.id : 'default';
+        localStorage.setItem(`custom_categories_${this.currentUser}_${accountKey}`, JSON.stringify(this.customCategories));
+    }
+
+    // 加载自定义分类
+    loadCustomCategories() {
+        const accountKey = this.currentAccount ? this.currentAccount.id : 'default';
+        const saved = localStorage.getItem(`custom_categories_${this.currentUser}_${accountKey}`);
+        if (saved) {
+            this.customCategories = JSON.parse(saved);
+        }
+    }
+
+    // 更新分类选择器
+    updateCategorySelector() {
+        const categorySelect = document.getElementById('category');
+        const currentType = this.currentType;
+        const categories = this.getAllCategories(currentType);
+        
+        // 保存当前选中的值
+        const currentValue = categorySelect.value;
+        
+        // 清空并重新填充选项
+        categorySelect.innerHTML = '<option value="">选择分类</option>';
+        
+        categories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category;
+            option.textContent = category;
+            categorySelect.appendChild(option);
+        });
+        
+        // 恢复之前选中的值（如果还存在）
+        if (categories.includes(currentValue)) {
+            categorySelect.value = currentValue;
+        }
+    }
+
+    // 分类管理界面方法
+    showCategoryManage() {
+        const modal = document.getElementById('category-manage-modal');
+        modal.style.display = 'flex';
+        this.currentCategoryType = 'expense';
+        this.renderCategoryList();
+    }
+
+    hideCategoryManage() {
+        const modal = document.getElementById('category-manage-modal');
+        modal.style.display = 'none';
+        document.getElementById('new-category-name').value = '';
+    }
+
+    switchCategoryType(type) {
+        this.currentCategoryType = type;
+        
+        // 更新标签页状态
+        document.querySelectorAll('.category-tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-category-type="${type}"]`).classList.add('active');
+        
+        // 重新渲染分类列表
+        this.renderCategoryList();
+    }
+
+    handleAddCategory() {
+        const categoryName = document.getElementById('new-category-name').value.trim();
+        if (!categoryName) {
+            alert('请输入分类名称');
+            return;
+        }
+
+        const result = this.addCustomCategory(categoryName, this.currentCategoryType);
+        if (result.success) {
+            document.getElementById('new-category-name').value = '';
+            this.renderCategoryList();
+            this.updateCategorySelector(); // 更新交易表单中的分类选择器
+            alert(result.message);
+        } else {
+            alert(result.message);
+        }
+    }
+
+    handleDeleteCategory(categoryName) {
+        if (confirm(`确定要删除分类"${categoryName}"吗？`)) {
+            const result = this.deleteCustomCategory(categoryName, this.currentCategoryType);
+            if (result.success) {
+                this.renderCategoryList();
+                this.updateCategorySelector(); // 更新交易表单中的分类选择器
+                alert(result.message);
+            } else {
+                alert(result.message);
+            }
+        }
+    }
+
+    renderCategoryList() {
+        const categoryList = document.getElementById('category-list');
+        const defaultCategories = this.categories[this.currentCategoryType];
+        const customCategories = this.customCategories[this.currentCategoryType];
+        
+        if (defaultCategories.length === 0 && customCategories.length === 0) {
+            categoryList.innerHTML = '<div class="empty-category-list">暂无分类</div>';
+            return;
+        }
+
+        let html = '';
+        
+        // 显示默认分类
+        defaultCategories.forEach(category => {
+            html += `
+                <div class="category-item">
+                    <div class="category-info">
+                        <span class="category-type-badge default">默认</span>
+                        <span class="category-name">${category}</span>
+                    </div>
+                    <button class="delete-category-btn" disabled>系统分类</button>
+                </div>
+            `;
+        });
+        
+        // 显示自定义分类
+        customCategories.forEach(category => {
+            html += `
+                <div class="category-item">
+                    <div class="category-info">
+                        <span class="category-type-badge custom">自定义</span>
+                        <span class="category-name">${category}</span>
+                    </div>
+                    <button class="delete-category-btn" onclick="app.handleDeleteCategory('${category}')">删除</button>
+                </div>
+            `;
+        });
+        
+        categoryList.innerHTML = html;
     }
 }
 
